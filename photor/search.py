@@ -6,6 +6,7 @@ from typing import Optional
 from . import chroma
 from .siglip import SigLipModel
 from .utils import media_path
+from .map_generator import build_where
 
 logger = logging.getLogger("photor")
 
@@ -38,10 +39,9 @@ def search_photos(
     # Encode query
     query_embedding = model.encode_text(query)
 
-    # Build filter
-    where_filter = None
-    if session:
-        where_filter = {"session": session}
+    # Build filter with multi-support
+    where_filter = build_where(session=session)
+    # Note: build_where returns None when no filters, which is correct for ChromaDB
 
     # Search
     results = chroma.search_similar(

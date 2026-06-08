@@ -109,22 +109,22 @@ async function loadFilterOptions() {
     const sessData = await sessRes.json();
     const projData = await projRes.json();
 
-    // Sessions dropdown
-    const sessSelect = document.getElementById('filter-session');
+    // Sessions datalist (autocomplete)
+    const sessList = document.getElementById('session-list');
     sessData.sessions.forEach((s) => {
       const opt = document.createElement('option');
       opt.value = s.name;
       opt.textContent = `${s.name} (${s.count})`;
-      sessSelect.appendChild(opt);
+      sessList.appendChild(opt);
     });
 
-    // Projects dropdown
-    const projSelect = document.getElementById('filter-project');
+    // Projects datalist (autocomplete)
+    const projList = document.getElementById('project-list');
     projData.projects.forEach((p) => {
       const opt = document.createElement('option');
       opt.value = p.name;
       opt.textContent = `${p.name} (${p.count})`;
-      projSelect.appendChild(opt);
+      projList.appendChild(opt);
     });
   } catch (e) {
     console.warn('Error loading filter options:', e);

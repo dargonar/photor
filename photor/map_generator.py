@@ -30,15 +30,41 @@ def next_filename(directory: str, prefix: str = "mapeo", ext: str = ".html") -> 
 
 def build_where(session=None, project=None, set_name=None, variante=None,
                 color=None, orientacion=None, personajes=None):
-    """Build ChromaDB where filter combining multiple conditions."""
+    """Build ChromaDB where filter combining multiple conditions.
+
+    Supports comma-separated values for multi-filtering with $in.
+    Ej: session="flor,gero" → {"session": {"$in": ["flor", "gero"]}}
+    """
+    def _val(v):
+        """Parse a value: string → list if comma-separated, else as-is."""
+        if not v:
+            return None
+        if isinstance(v, (list, tuple)):
+            return v if len(v) > 1 else v[0]
+        v = v.strip()
+        if "," in v:
+            parts = [p.strip() for p in v.split(",") if p.strip()]
+            return parts if len(parts) > 1 else parts[0]
+        return v
+
+    def _cond(key, raw):
+        val = _val(raw)
+        if not val:
+            return None
+        if isinstance(val, list):
+            return {key: {"$in": val}}
+        return {key: val}
+
     conditions = []
-    if session: conditions.append({"session": session})
-    if project: conditions.append({"project": project})
-    if set_name: conditions.append({"set": set_name})
-    if variante: conditions.append({"variante": variante})
-    if color: conditions.append({"color": color})
-    if orientacion: conditions.append({"orientacion": orientacion})
-    if personajes: conditions.append({"personajes": personajes})
+    for key, raw in [
+        ("session", session), ("project", project), ("set", set_name),
+        ("variante", variante), ("color", color), ("orientacion", orientacion),
+        ("personajes", personajes),
+    ]:
+        c = _cond(key, raw)
+        if c:
+            conditions.append(c)
+
     if len(conditions) == 0:
         return None
     elif len(conditions) == 1:
