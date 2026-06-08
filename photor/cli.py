@@ -12,6 +12,7 @@ from . import index as index_mod
 from . import search as search_mod
 from . import map_generator as map_mod
 from .discover import discover_sessions, print_discovery
+from .serve import serve as serve_fn
 
 # ── Global config ───────────────────────────────────────────────────
 _cfg = load_config()
@@ -341,6 +342,24 @@ def map(
     except Exception as e:
         typer.echo(f"❌ Error: {e}", err=True)
         raise typer.Exit(code=1)
+
+
+# ── serve ───────────────────────────────────────────────────────
+
+@app.command()
+def serve(
+    port: int = typer.Option(9000, "--port", "-p", help="Puerto del servidor web"),
+    host: str = typer.Option("0.0.0.0", "--host", help="Host del servidor web"),
+):
+    """Iniciar Web UI para mapas conceptuales.
+
+    Abre un servidor web con interfaz gráfica para explorar
+    conceptos visuales. No carga SigLIP — delega al CLI.
+
+    Ejemplo:
+        photor serve --port 9000
+    """
+    serve_fn(host=host, port=port)
 
 
 # ── discover ────────────────────────────────────────────────────────

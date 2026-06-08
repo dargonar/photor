@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>photor map — Web UI</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div class="app">
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h1>📷 photor map</h1>
+      <button class="btn-new" id="btn-new">✏️ Nueva</button>
+    </div>
+    <div class="sidebar-history" id="history-list">
+      <div style="padding:20px;text-align:center;color:var(--muted);font-size:12px;">Cargando...</div>
+    </div>
+  </aside>
+
+  <!-- ── Main ── -->
+  <main class="main">
+
+    <!-- Header -->
+    <div class="header">
+      <h2>📷 Mapa Conceptual</h2>
+      <input class="search-input" id="search-input" type="search" placeholder="🔍 Buscar en resultados..." autocomplete="off">
+    </div>
+
+    <!-- Body -->
+    <div class="body">
+
+      <!-- Query Form -->
+      <div class="query-form">
+        <div class="query-rows" id="query-rows"></div>
+
+        <div class="query-toolbar">
+          <button class="btn" id="btn-add-row">➕ Agregar fila</button>
+          <button class="btn" id="filters-toggle">⚙️ Filtros</button>
+          <button class="btn btn-primary" id="btn-run">▶ Ejecutar <span style="font-size:11px;opacity:0.6;">Ctrl+Enter</span></button>
+        </div>
+
+        <!-- Filters panel -->
+        <div class="filters-panel" id="filters-panel">
+          <form id="filters-form" onsubmit="return false;">
+            <div class="filters-grid">
+              <div class="filter-group">
+                <label for="filter-session">Sesión</label>
+                <select id="filter-session" name="session">
+                  <option value="">— Todas —</option>
+                </select>
+              </div>
+              <div class="filter-group">
+                <label for="filter-project">Proyecto</label>
+                <input id="filter-project" name="project" placeholder="brenda, mila..." autocomplete="off">
+              </div>
+              <div class="filter-group">
+                <label for="filter-set">Set</label>
+                <select id="filter-set" name="set">
+                  <option value="">— Todos —</option>
+                  <option value="portfolio">portfolio</option>
+                  <option value="raw">raw</option>
+                  <option value="edited">edited</option>
+                  <option value="selected">selected</option>
+                  <option value="mobile">mobile</option>
+                </select>
+              </div>
+              <div class="filter-group">
+                <label for="filter-color">Color</label>
+                <select id="filter-color" name="color">
+                  <option value="">— Todos —</option>
+                  <option value="color">color</option>
+                  <option value="bw">bw</option>
+                </select>
+              </div>
+              <div class="filter-group">
+                <label for="filter-orientacion">Orientación</label>
+                <select id="filter-orientacion" name="orientacion">
+                  <option value="">— Todos —</option>
+                  <option value="horizontal">horizontal</option>
+                  <option value="vertical">vertical</option>
+                  <option value="cuadrada">cuadrada</option>
+                </select>
+              </div>
+              <div class="filter-group">
+                <label for="filter-personajes">Personajes</label>
+                <input id="filter-personajes" name="personajes" placeholder="brenda, mila..." autocomplete="off">
+              </div>
+              <div class="filter-group">
+                <label for="filter-n_results">Resultados por concepto</label>
+                <input id="filter-n_results" name="n_results" type="number" value="15" min="5" max="100">
+              </div>
+              <div class="filter-group">
+                <label for="filter-nodal_top">Máx nodales</label>
+                <input id="filter-nodal_top" name="nodal_top" type="number" value="10" min="3" max="50">
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Error -->
+      <div class="error-box" id="error-box"></div>
+
+      <!-- Loading -->
+      <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <p>Generando mapa conceptual...</p>
+      </div>
+
+      <!-- Empty state -->
+      <div class="empty-state" id="empty-state">
+        <div class="emoji">📷</div>
+        <h3>Mapa Conceptual</h3>
+        <p>Agregá conceptos para buscar y hacé click en <strong>Ejecutar</strong>.</p>
+        <p style="margin-top:8px;font-size:12px;color:var(--muted);">Cada línea es un concepto. El mapa agrupa las fotos por concepto y muestra conexiones entre ellos.</p>
+      </div>
+
+      <!-- Results -->
+      <div class="results" id="results">
+        <div class="results-header">
+          <div>
+            <div class="r-title" id="results-title">Resultados</div>
+            <div class="r-stats" id="results-stats">0 fotos · 0 conceptos</div>
+          </div>
+          <div class="results-actions">
+            <button class="btn" id="btn-download">💾 Guardar</button>
+            <button class="btn" id="btn-copy">📋 Ruta</button>
+          </div>
+        </div>
+        <iframe class="map-frame" id="results-body" sandbox="allow-same-origin"></iframe>
+      </div>
+
+    </div>
+  </main>
+
+</div>
+
+<!-- Confirm dialog -->
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-box">
+    <p id="confirm-msg">¿Eliminar esta query?</p>
+    <div class="btn-group">
+      <button class="btn btn-danger" id="confirm-yes">Eliminar</button>
+      <button class="btn" id="confirm-no">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
