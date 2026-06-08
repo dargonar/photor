@@ -1,0 +1,52 @@
+# photor.yaml — Metadata de sesión fotográfica
+# Copiá este archivo a la carpeta de cada sesión y completá los campos.
+# Los campos vacíos o comentados se auto-detectan desde el path y EXIF.
+
+# ── Identificación ──────────────────────────────────────────────────
+
+# Nombre de la sesión (obligatorio si el nombre de carpeta no alcanza)
+# Si se omite, se toma del nombre de la carpeta (con guiones)
+session: "brenda-pileta-kinky"
+
+# Proyecto padre (agrupa varias sesiones). Ej: brenda, valentin, wildlife
+# Si se omite, se toma del nombre de la carpeta padre si tiene hermanos
+project: "brenda"
+
+# Sub-categoría: portfolio | raw | alternative | chosen | descartes
+# Si se omite, se detecta automático por nombre de subcarpeta
+#   root/        → portfolio
+#   raw/         → raw
+#   alternative/ → alternative
+set: "portfolio"
+
+# ── Descripción ─────────────────────────────────────────────────────
+
+# Personajes que aparecen (separados por coma)
+personajes: "brenda,maya"
+
+# Tags libres (separados por coma)
+tags: "pileta,agua,verano,kinky"
+
+# Ubicación general de la sesión
+location: "La Plata, Buenos Aires, AR"
+
+# Año de la sesión (override del EXIF si no existe)
+year: 2025
+
+# Descripción textual libre
+description: "Sesión de Brenda y Maya en la pileta, experimentando con texturas y reflejos."
+
+# Rating curatorial 1-5 (para filtrar después)
+rating: 4
+
+# Marcar como selección editorial (true/false)
+selected: true
+
+# ── Metadata extra (opcional) ───────────────────────────────────────
+
+# Cualquier campo adicional que quieras guardar como metadata
+# (se guarda en ChromaDB y es filtrable después)
+# extra:
+#   cliente: "marina"
+#   tema: "boudoir"
+#   estado: "en-edicion"

@@ -1,0 +1,39 @@
+# photor.yaml — defaults globales
+chroma:
+  path: /media/dargonar/bkp_1t_new/portfolio/db
+  collection: photos
+
+model:
+  name: google/siglip-so400m-patch14-384
+  device: auto          # auto | cuda | cpu
+
+search:
+  n_results: 15
+
+raw2jpg:
+  quality: 95
+  camera_wb: true
+  half_size: false
+  output_bps: 8
+  skip_existing: true
+  format: jpg
+
+crop:
+  threshold: 240
+  purity: 0.95
+  max_size: 1920
+  max_bytes: 2097152
+  format: jpg
+
+resize:
+  max_size: 1920
+  quality: 95
+  max_bytes: 2097152
+  method: binary
+  format: jpg
+
+map:
+  n_results: 15
+  dark: true
+  inline: true
+  output_dir: /media/dargonar/bkp_1t_new/portfolio/maps

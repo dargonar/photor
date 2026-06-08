@@ -1,0 +1,7 @@
+# Ignorar todas las carpetas __pycache__ del proyecto
+photor/__pycache__/
+
+# Ignorar archivos compilados individuales por si acaso
+*.pyc
+*.pyo
+*.pyd
