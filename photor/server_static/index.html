@@ -13,7 +13,10 @@
   <aside class="sidebar">
     <div class="sidebar-header">
       <h1>📷 photor map</h1>
-      <button class="btn-new" id="btn-new">✏️ Nueva</button>
+      <div style="display:flex;gap:4px;">
+        <a href="/projects.html" class="btn-new" style="text-decoration:none;font-size:11px;">📁</a>
+        <button class="btn-new" id="btn-new">✏️ Nueva</button>
+      </div>
     </div>
     <div class="sidebar-history" id="history-list">
       <div style="padding:20px;text-align:center;color:var(--muted);font-size:12px;">Cargando...</div>
@@ -48,14 +51,14 @@
           <form id="filters-form" onsubmit="return false;">
             <div class="filters-grid">
               <div class="filter-group">
-                <label for="filter-session">Sesión (coma para múltiples)</label>
-                <input id="filter-session" name="session" placeholder="flor, gero, lucy" autocomplete="off" class="filter-input" list="session-list">
-                <datalist id="session-list"></datalist>
-              </div>
-              <div class="filter-group">
                 <label for="filter-project">Proyecto (coma para múltiples)</label>
                 <input id="filter-project" name="project" placeholder="brenda, mila" autocomplete="off" class="filter-input" list="project-list">
                 <datalist id="project-list"></datalist>
+              </div>
+              <div class="filter-group">
+                <label for="filter-session">Sesión (coma para múltiples)</label>
+                <input id="filter-session" name="session" placeholder="flor, gero, lucy" autocomplete="off" class="filter-input" list="session-list">
+                <datalist id="session-list"></datalist>
               </div>
               <div class="filter-group">
                 <label for="filter-set">Set</label>

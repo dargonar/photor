@@ -107,6 +107,8 @@ def route(handler):
     m = re.match(r"^/api/queries/delete/(\d+)$", path)
     if m and method == "POST":
         return api_queries_delete(handler, int(m.group(1)))
+    if path == "/api/tree" and method == "GET":
+        return api_tree(handler)
     if path == "/api/map" and method == "POST":
         return api_map_run(handler)
     if path == "/api/map-file" and method == "GET":
@@ -207,6 +209,44 @@ def api_projects(handler):
     projects = stats.get("projects", {})
     data = [{"name": p, "count": c} for p, c in projects.items()]
     json_response(handler, {"projects": data})
+
+
+def api_tree(handler):
+    """GET /api/tree — project → session → set hierarchy with counts."""
+    cfg = _load_config()
+    db_path = cfg.get("chroma", {}).get("path", "/media/dargonar/bkp_1t_new/photo_index")
+    collection_name = cfg.get("chroma", {}).get("collection", "photos")
+
+    client = get_client(db_path)
+    try:
+        collection = get_collection(client, collection_name, create=False)
+    except ValueError:
+        json_response(handler, {"projects": []})
+        return
+
+    all_data = collection.get(include=["metadatas"])
+    tree = {}  # project → {session → {set → count}}
+    for m in all_data["metadatas"]:
+        if not m:
+            continue
+        p = m.get("project") or m.get("session", "unknown")
+        s = m.get("session", "unknown")
+        t = m.get("set", "default")
+        if p not in tree:
+            tree[p] = {}
+        if s not in tree[p]:
+            tree[p][s] = {}
+        tree[p][s][t] = tree[p][s].get(t, 0) + 1
+
+    result = []
+    for p in sorted(tree):
+        sessions = []
+        for s in sorted(tree[p]):
+            sets = [{"name": t, "count": c} for t, c in sorted(tree[p][s].items())]
+            total = sum(c for _, c in tree[p][s].items())
+            sessions.append({"name": s, "total": total, "sets": sets})
+        result.append({"name": p, "sessions": sessions})
+    json_response(handler, {"projects": result})
 
 
 def api_queries_list(handler):
