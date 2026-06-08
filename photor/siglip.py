@@ -33,13 +33,29 @@ class SigLipModel:
         return self._device
 
     def load(self):
-        """Load the model if not already loaded."""
+        """Load the model if not already loaded.
+
+        Tries CUDA first (if auto/cuda), falls back to CPU on OOM.
+        """
+        import torch
         if self._model is None:
-            logger.info(f"Cargando modelo {self.model_name} en {self.device}...")
-            self._model = SentenceTransformer(
-                self.model_name, device=self.device
-            )
-            logger.info("Modelo cargado ✅")
+            dev = self.device
+            logger.info(f"Cargando modelo {self.model_name} en {dev}...")
+            try:
+                self._model = SentenceTransformer(
+                    self.model_name, device=dev
+                )
+                logger.info("Modelo cargado ✅")
+            except (RuntimeError, torch.cuda.CudaError, torch.OutOfMemoryError) as e:
+                if dev == "cuda" or (dev == "auto" and "CUDA out of memory" in str(e)):
+                    logger.warning(f"⚠️  CUDA sin memoria ({e}), cayendo a CPU...")
+                    self._device = "cpu"
+                    self._model = SentenceTransformer(
+                        self.model_name, device="cpu"
+                    )
+                    logger.info("Modelo cargado en CPU ✅")
+                else:
+                    raise
 
     def encode_text(self, text: str) -> list[float]:
         """Encode text query and return normalized embedding."""

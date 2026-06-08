@@ -21,7 +21,7 @@ from pathlib import Path
 from urllib.parse import urlparse, parse_qs
 
 from . import db
-from .chroma import get_client, get_collection, list_sessions
+from .chroma import get_client, get_collection, list_sessions, get_stats
 
 logger = logging.getLogger("photor.serve")
 
@@ -100,6 +100,8 @@ def route(handler):
     # API routes first
     if path == "/api/sessions" and method == "GET":
         return api_sessions(handler)
+    if path == "/api/projects" and method == "GET":
+        return api_projects(handler)
     if path == "/api/queries" and method == "GET":
         return api_queries_list(handler)
     m = re.match(r"^/api/queries/delete/(\d+)$", path)
@@ -194,6 +196,17 @@ def api_sessions(handler):
     sessions = list_sessions(db_path, collection_name)
     data = [{"name": s, "count": c} for s, c in sessions.items()]
     json_response(handler, {"sessions": data})
+
+
+def api_projects(handler):
+    """GET /api/projects — list available projects."""
+    cfg = _load_config()
+    db_path = cfg.get("chroma", {}).get("path", "/media/dargonar/bkp_1t_new/photo_index")
+    collection_name = cfg.get("chroma", {}).get("collection", "photos")
+    stats = get_stats(db_path, collection_name)
+    projects = stats.get("projects", {})
+    data = [{"name": p, "count": c} for p, c in projects.items()]
+    json_response(handler, {"projects": data})
 
 
 def api_queries_list(handler):
@@ -350,20 +363,21 @@ def api_map_run(handler):
             }, 500)
             return
 
-        # Read the generated HTML
-        with open(output_path_str, "r", encoding="utf-8") as f:
-            html = f.read()
-
-        # Compute stats
-        unique_photos = len(set(
-            p["path"] for p in _extract_photos_from_html(html)
-        )) if html else 0
-
+        # Don't read the HTML — just return the path
+        # Compute basic stats from the CLI output
         stats = {
             "total_entries": len(queries) * n_results,
-            "unique_photos": unique_photos,
+            "unique_photos": 0,
             "concepts": len(queries),
         }
+        # Try to extract unique photo count from CLI output
+        for line in (result.stdout or "").split("\n"):
+            if "fotos únicas" in line:
+                import re
+                m = re.search(r'(\d+)\s+fotos', line)
+                if m:
+                    stats["unique_photos"] = int(m.group(1))
+                break
 
         # Save to SQLite
         query_id = db.save_query(request, output_path_str, stats)
@@ -371,7 +385,6 @@ def api_map_run(handler):
         # Response
         json_response(handler, {
             "id": query_id,
-            "html": html,
             "path": output_path_str,
             "stats": stats,
             "title": generate_map_title(request),
@@ -392,15 +405,6 @@ def api_map_run(handler):
             pass
         logger.exception("Error in api_map_run")
         error_response(handler, str(e), 500)
-
-
-def _extract_photos_from_html(html: str) -> list[dict]:
-    """Extract basic photo info from generated HTML (simple parsing)."""
-    photos = []
-    for line in html.split("\n"):
-        if 'class="filename"' in line:
-            photos.append({"filename": "unknown"})
-    return photos
 
 
 def _next_filename(directory: str, prefix: str = "mapeo", ext: str = ".html") -> Path:

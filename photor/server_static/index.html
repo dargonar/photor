@@ -34,16 +34,17 @@
 
       <!-- Query Form -->
       <div class="query-form">
-        <div class="query-rows" id="query-rows"></div>
+        <div class="query-field">
+          <textarea id="query-textarea" placeholder="titulo1: agua, pileta, reflejos, superficie&#10;titulo2: playa, mar, espacio&#10;titulo3: montaña, arboles, naturaleza" spellcheck="false"></textarea>
+        </div>
 
         <div class="query-toolbar">
-          <button class="btn" id="btn-add-row">➕ Agregar fila</button>
-          <button class="btn" id="filters-toggle">⚙️ Filtros</button>
           <button class="btn btn-primary" id="btn-run">▶ Ejecutar <span style="font-size:11px;opacity:0.6;">Ctrl+Enter</span></button>
+          <button class="btn" id="filters-toggle" style="font-size:12px;">⚙️</button>
         </div>
 
         <!-- Filters panel -->
-        <div class="filters-panel" id="filters-panel">
+        <div class="filters-panel open" id="filters-panel">
           <form id="filters-form" onsubmit="return false;">
             <div class="filters-grid">
               <div class="filter-group">
@@ -54,7 +55,9 @@
               </div>
               <div class="filter-group">
                 <label for="filter-project">Proyecto</label>
-                <input id="filter-project" name="project" placeholder="brenda, mila..." autocomplete="off">
+                <select id="filter-project" name="project">
+                  <option value="">— Todos —</option>
+                </select>
               </div>
               <div class="filter-group">
                 <label for="filter-set">Set</label>
@@ -114,8 +117,11 @@
       <div class="empty-state" id="empty-state">
         <div class="emoji">📷</div>
         <h3>Mapa Conceptual</h3>
-        <p>Agregá conceptos para buscar y hacé click en <strong>Ejecutar</strong>.</p>
-        <p style="margin-top:8px;font-size:12px;color:var(--muted);">Cada línea es un concepto. El mapa agrupa las fotos por concepto y muestra conexiones entre ellos.</p>
+        <p>Escribí una línea por concepto con el formato <strong>título: términos de búsqueda</strong>.</p>
+        <pre style="background:var(--surface);padding:12px;border-radius:var(--radius);margin:12px auto;max-width:400px;text-align:left;font-size:12px;color:var(--muted);line-height:1.8;">piel: piel, tacto, desnudez, cuerpo, manos
+agua: pileta, mar, reflejos, superficie
+mirada: ojos, rostro, expresión, cara</pre>
+        <p style="margin-top:8px;font-size:12px;color:var(--muted);">Cada línea es un concepto. El mapa agrupa las fotos y muestra conexiones.</p>
       </div>
 
       <!-- Results -->
@@ -130,7 +136,7 @@
             <button class="btn" id="btn-copy">📋 Ruta</button>
           </div>
         </div>
-        <iframe class="map-frame" id="results-body" sandbox="allow-same-origin"></iframe>
+        <div id="results-body"></div>
       </div>
 
     </div>

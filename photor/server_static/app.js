@@ -14,10 +14,7 @@ const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
 
 const el = {
-  queryRows: () => document.getElementById('query-rows'),
-  addRowBtn: () => document.getElementById('btn-add-row'),
   runBtn: () => document.getElementById('btn-run'),
-  filtersToggle: () => document.getElementById('filters-toggle'),
   filtersPanel: () => document.getElementById('filters-panel'),
   filtersForm: () => document.getElementById('filters-form'),
   results: () => document.getElementById('results'),
@@ -40,10 +37,6 @@ const el = {
 
 // ── Init ──
 document.addEventListener('DOMContentLoaded', async () => {
-  // Add initial 2 query rows
-  addQueryRow();
-  addQueryRow();
-
   // Load sessions for filter dropdowns
   await loadFilterOptions();
 
@@ -51,10 +44,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadHistory();
 
   // Event listeners
-  el.addRowBtn().addEventListener('click', () => addQueryRow());
   el.runBtn().addEventListener('click', runQuery);
-  el.filtersToggle().addEventListener('click', toggleFilters);
   el.newBtn().addEventListener('click', newQuery);
+  const ft = document.getElementById('filters-toggle');
+  if (ft) ft.addEventListener('click', toggleFilters);
   el.searchInput().addEventListener('input', filterResults);
   el.downloadBtn().addEventListener('click', downloadHTML);
   el.copyBtn().addEventListener('click', copyPath);
@@ -70,55 +63,36 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 });
 
-// ── Query rows ──
-function addQueryRow(emoji = '', titulo = '', query = '') {
-  const row = document.createElement('div');
-  row.className = 'query-row';
-  row.innerHTML = `
-    <input class="qr-emoji" placeholder="🌊" value="${escapeHtml(emoji)}" maxlength="4">
-    <input class="qr-title" placeholder="Título" value="${escapeHtml(titulo)}">
-    <input class="qr-query" placeholder="agua, pileta, mar..." value="${escapeHtml(query)}">
-    <button class="qr-remove" title="Eliminar fila">✕</button>
-  `;
-  row.querySelector('.qr-remove').addEventListener('click', () => {
-    if (document.querySelectorAll('.query-row').length > 1) {
-      row.remove();
-    }
-  });
-  // Also support Enter to add new row
-  row.querySelector('.qr-query').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      addQueryRow();
-      // Focus the new row's emoji
-      const rows = document.querySelectorAll('.query-row');
-      rows[rows.length - 1].querySelector('.qr-emoji').focus();
-    }
-  });
-  el.queryRows().appendChild(row);
-}
-
+// ── Query parsing ──
 function getQueryRows() {
+  const text = document.getElementById('query-textarea').value;
   const rows = [];
-  document.querySelectorAll('.query-row').forEach((row) => {
-    const emoji = row.querySelector('.qr-emoji').value.trim();
-    const titulo = row.querySelector('.qr-title').value.trim();
-    const query = row.querySelector('.qr-query').value.trim();
-    if (query) {
-      rows.push({ emoji: emoji || '📷', titulo: titulo || query.split(',')[0].trim(), query });
+  text.split('\n').forEach((line) => {
+    line = line.trim();
+    if (!line) return;
+    // Format: "Title: query terms, more terms"
+    const colonIdx = line.indexOf(':');
+    if (colonIdx === -1) {
+      // No colon: use the whole line as both title and query
+      if (line) rows.push({ emoji: '📷', titulo: line, query: line });
+      return;
+    }
+    const titulo = line.substring(0, colonIdx).trim();
+    const query = line.substring(colonIdx + 1).trim();
+    if (titulo && query) {
+      rows.push({ emoji: '📷', titulo, query });
+    } else if (query) {
+      rows.push({ emoji: '📷', titulo: query, query });
     }
   });
   return rows;
 }
 
 function setQueryRows(queries) {
-  el.queryRows().innerHTML = '';
-  if (!queries || queries.length === 0) {
-    addQueryRow();
-    addQueryRow();
-    return;
-  }
-  queries.forEach((q) => addQueryRow(q.emoji, q.titulo, q.query));
+  const text = (queries || [])
+    .map((q) => `${q.titulo}: ${q.query}`)
+    .join('\n');
+  document.getElementById('query-textarea').value = text;
 }
 
 // ── Filters ──
@@ -128,17 +102,32 @@ function toggleFilters() {
 
 async function loadFilterOptions() {
   try {
-    const res = await fetch('/api/sessions');
-    const data = await res.json();
-    const select = document.getElementById('filter-session');
-    data.sessions.forEach((s) => {
+    const [sessRes, projRes] = await Promise.all([
+      fetch('/api/sessions'),
+      fetch('/api/projects')
+    ]);
+    const sessData = await sessRes.json();
+    const projData = await projRes.json();
+
+    // Sessions dropdown
+    const sessSelect = document.getElementById('filter-session');
+    sessData.sessions.forEach((s) => {
       const opt = document.createElement('option');
       opt.value = s.name;
       opt.textContent = `${s.name} (${s.count})`;
-      select.appendChild(opt);
+      sessSelect.appendChild(opt);
+    });
+
+    // Projects dropdown
+    const projSelect = document.getElementById('filter-project');
+    projData.projects.forEach((p) => {
+      const opt = document.createElement('option');
+      opt.value = p.name;
+      opt.textContent = `${p.name} (${p.count})`;
+      projSelect.appendChild(opt);
     });
   } catch (e) {
-    console.warn('Error loading sessions:', e);
+    console.warn('Error loading filter options:', e);
   }
 }
 
@@ -220,12 +209,24 @@ function showResults(data) {
   el.resultsTitle().textContent = data.title || 'Resultados';
   el.resultsStats().textContent = `${data.stats.unique_photos} fotos · ${data.stats.concepts} conceptos`;
 
-  // Render HTML in iframe
-  el.resultsBody().srcdoc = data.html;
-  el.resultsBody().style.minHeight = Math.max(500, window.innerHeight - 300) + 'px';
+  // Show link to HTML file
+  const path = data.path || '';
+  const fileName = path.split('/').pop();
+  el.resultsBody().innerHTML = `
+    <div class="result-link">
+      <div class="result-link-icon">📊</div>
+      <div class="result-link-info">
+        <a href="/api/map-file?path=${encodeURIComponent(path)}" target="_blank" class="result-link-file">
+          ${escapeHtml(fileName)}
+        </a>
+        <div class="result-link-path">${escapeHtml(path)}</div>
+      </div>
+      <a href="/api/map-file?path=${encodeURIComponent(path)}&download=1" class="btn" download>💾</a>
+    </div>
+  `;
 
-  // Store result path for download/copy
-  el.resultsBody().dataset.path = data.path || '';
+  // Store result path for copy action
+  el.resultsBody().dataset.path = path;
 }
 
 function filterResults() {
@@ -235,7 +236,7 @@ function filterResults() {
 }
 
 function newQuery() {
-  setQueryRows([]);
+  document.getElementById('query-textarea').value = '';
   setFilters({});
   el.results().classList.remove('visible');
   el.empty().style.display = 'block';
@@ -312,35 +313,44 @@ async function restoreQuery(id) {
     state.activeHistoryId = id;
     highlightHistoryItem(id);
 
-    // If we have the HTML, load it
+    // Restore query text into textarea
+    const request = q.request || {};
+    const queries = request.queries || [];
+    if (queries.length > 0) {
+      setQueryRows(queries);
+    }
+
+    // Restore filters
+    const filters = {};
+    ['session','project','set','color','orientacion','personajes'].forEach((k) => {
+      if (request[k]) filters[k] = request[k];
+    });
+    if (request.n_results) filters.n_results = request.n_results;
+    if (request.nodal_top) filters.nodal_top = request.nodal_top;
+    setFilters(filters);
+
+    // Load HTML result
     if (q.result_path) {
       try {
-        const htmlRes = await fetch(`/static/../${encodeURI(q.result_path)}`);
-        // Actually we need to read the file... but the file might be outside static
-        // So instead we'll use a workaround: restore the request and re-run
+        const htmlRes = await fetch(`/api/map-file?path=${encodeURIComponent(q.result_path)}`);
+        if (htmlRes.ok) {
+          const htmlData = await htmlRes.json();
+          showResults({
+            id: q.id,
+            title: q.title,
+            stats: q.stats,
+            path: q.result_path,
+            created_at: q.created_at,
+          });
+          return;
+        }
       } catch (e) {
-        // File might not be accessible, re-run
+        // fall through to re-run
       }
     }
 
-    // Try to load full query details from the list or refetch
-    // For now, just load the results from the file
-    if (q.result_path) {
-      // Use fetch to get the HTML file
-      const htmlRes = await fetch(`/api/map-file?path=${encodeURIComponent(q.result_path)}`);
-      if (htmlRes.ok) {
-        const htmlData = await htmlRes.json();
-        showResults({
-          id: q.id,
-          title: q.title,
-          html: htmlData.html,
-          stats: q.stats,
-          path: q.result_path,
-          created_at: q.created_at,
-        });
-        return;
-      }
-    }
+    // If HTML couldn't be loaded, re-run the query
+    runQuery();
 
   } catch (e) {
     console.warn('Error restoring query:', e);

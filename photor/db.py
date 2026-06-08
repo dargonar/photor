@@ -73,16 +73,18 @@ def list_queries(limit: int = 50) -> list[dict]:
     """List recent queries, newest first."""
     conn = _get_conn()
     rows = conn.execute(
-        "SELECT id, created_at, title, result_path, stats_json, session, project "
+        "SELECT id, created_at, title, request_json, result_path, stats_json, session, project "
         "FROM queries ORDER BY created_at DESC LIMIT ?", (limit,)
     ).fetchall()
     results = []
     for r in rows:
         stats = json.loads(r["stats_json"]) if r["stats_json"] else {}
+        request = json.loads(r["request_json"]) if r["request_json"] else {}
         results.append({
             "id": r["id"],
             "created_at": r["created_at"],
             "title": r["title"],
+            "request": request,
             "result_path": r["result_path"],
             "stats": stats,
             "session": r["session"] or None,
