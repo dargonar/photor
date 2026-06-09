@@ -75,10 +75,11 @@ def build_where(session=None, project=None, set_name=None, variante=None,
 
 def run_queries(queries: list[dict], n_results: int, model: SigLipModel,
                 collection, path_map: Optional[dict] = None, **filters):
-    """Execute all queries and return flat list of results."""
+    """Execute all queries and return flat list of results.
+    Each result gets an 'index' field (1-based) matching the query position."""
     all_photos = []
 
-    for q in queries:
+    for idx, q in enumerate(queries, start=1):
         query_text = q["query"]
         emoji = q.get("emoji", "")
         titulo = q.get("titulo", query_text)
@@ -114,6 +115,7 @@ def run_queries(queries: list[dict], n_results: int, model: SigLipModel,
                 "emoji": emoji,
                 "titulo": titulo,
                 "query_text": query_text,
+                "index": idx,
             })
 
     return all_photos
@@ -126,13 +128,14 @@ def build_html(queries: list[dict], all_photos: list[dict],
 
     # Group by concept ordered by query list
     concept_groups = []
-    for q in queries:
+    for i, q in enumerate(queries, start=1):
         key = q["titulo"]
         photos = [p for p in all_photos if p["titulo"] == key]
         if photos:
             # Sort by score descending
             photos.sort(key=lambda x: x["score"], reverse=True)
             concept_groups.append({
+                "index": i,
                 "emoji": q.get("emoji", ""),
                 "titulo": key,
                 "query_text": q["query"],
@@ -148,10 +151,10 @@ def build_html(queries: list[dict], all_photos: list[dict],
                 "path": p["path"],
                 "filename": p["filename"],
                 "session": p["session"],
-                "emojis": set(),
+                "indices": set(),
                 "concepts": set(),
             }
-        node_map[key]["emojis"].add(p["emoji"])
+        node_map[key]["indices"].add(p["index"])
         node_map[key]["concepts"].add(p["titulo"])
 
     nodals = [v for v in node_map.values() if len(v["concepts"]) >= 3]
@@ -185,7 +188,7 @@ def build_html(queries: list[dict], all_photos: list[dict],
   .photo-card {{ background: {card_bg}; border-radius: 8px; overflow: hidden; transition: background 0.2s; }}
   .photo-card:hover {{ background: {card_hover}; }}
   .photo-card a {{ text-decoration: none; color: inherit; display: block; }}
-  .photo-card img {{ width: 100%; aspect-ratio: 3/2; object-fit: cover; display: block; background: #222; }}
+  .photo-card img {{ width: 100%; object-fit: cover; display: block; background: #222; }}
   .photo-card .info {{ padding: 8px 10px 10px; }}
   .photo-card .filename {{ font-size: 0.75em; color: #aaa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }}
   .photo-card .session-tag {{ font-size: 0.65em; color: #666; margin-top: 2px; }}
@@ -205,7 +208,7 @@ def build_html(queries: list[dict], all_photos: list[dict],
     # Nav links
     for cg in concept_groups:
         anchor = escape(cg["titulo"].replace(" ", "-").lower())
-        lines.append(f'<a href="#{anchor}">{escape(cg["emoji"])} {escape(cg["titulo"])}</a>')
+        lines.append(f'<a href="#{anchor}">#{cg["index"]} {escape(cg["titulo"])}</a>')
     if nodals:
         lines.append('<a href="#nodal">⭐</a>')
     if bisagras:
@@ -223,7 +226,7 @@ def build_html(queries: list[dict], all_photos: list[dict],
     for cg in concept_groups:
         anchor = cg["titulo"].replace(" ", "-").lower()
         lines.append(f'<div class="cluster" id="{anchor}">')
-        lines.append(f'  <h2>{cg["emoji"]} {escape(cg["titulo"])} — {len(cg["photos"])} resultados</h2>')
+        lines.append(f'  <h2>#{cg["index"]} {cg["emoji"]} {escape(cg["titulo"])} — {len(cg["photos"])} resultados</h2>')
         lines.append(f'  <p class="query-sub">query: {escape(cg["query_text"])}</p>')
         lines.append('  <div class="grid">')
 
@@ -254,14 +257,14 @@ def build_html(queries: list[dict], all_photos: list[dict],
         lines.append(f'  <p class="query-sub">{len(nodals)} fotos que conectan múltiples conceptos</p>')
         lines.append('  <div class="grid">')
         for n in nodals_shown:
-            emoji_str = " ".join(sorted(n["emojis"]))
+            idx_str = ", ".join(f"#{i}" for i in sorted(n["indices"]))
             lines.append(f'    <div class="photo-card nodal">')
             lines.append(f'      <a href="file://{escape(n["path"])}" target="_blank">')
             lines.append(f'        <img src="file://{escape(n["path"])}" alt="{escape(n["filename"])}" loading="lazy">')
             lines.append('        <div class="info">')
             lines.append(f'          <div class="filename">{escape(n["filename"])}</div>')
             lines.append(f'          <div class="session-tag">{escape(n["session"])}</div>')
-            lines.append(f'          <div class="score">Clusters: {emoji_str}</div>')
+            lines.append(f'          <div class="score">Clusters: {idx_str}</div>')
             lines.append('        </div>')
             lines.append('      </a>')
             lines.append('    </div>')
@@ -276,14 +279,14 @@ def build_html(queries: list[dict], all_photos: list[dict],
         lines.append(f'  <p class="query-sub">{len(bisagras)} fotos que conectan exactamente 2 conceptos</p>')
         lines.append('  <div class="grid">')
         for b in bisagras_shown:
-            emoji_str = " ".join(sorted(b["emojis"]))
+            idx_str = ", ".join(f"#{i}" for i in sorted(b["indices"]))
             lines.append(f'    <div class="photo-card bisagra">')
             lines.append(f'      <a href="file://{escape(b["path"])}" target="_blank">')
             lines.append(f'        <img src="file://{escape(b["path"])}" alt="{escape(b["filename"])}" loading="lazy">')
             lines.append('        <div class="info">')
             lines.append(f'          <div class="filename">{escape(b["filename"])}</div>')
             lines.append(f'          <div class="session-tag">{escape(b["session"])}</div>')
-            lines.append(f'          <div class="score">Clusters: {emoji_str}</div>')
+            lines.append(f'          <div class="score">Clusters: {idx_str}</div>')
             lines.append('        </div>')
             lines.append('      </a>')
             lines.append('    </div>')

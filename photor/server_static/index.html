@@ -61,15 +61,18 @@
                 <datalist id="session-list"></datalist>
               </div>
               <div class="filter-group">
-                <label for="filter-set">Set</label>
-                <select id="filter-set" name="set">
-                  <option value="">— Todos —</option>
-                  <option value="portfolio">portfolio</option>
-                  <option value="raw">raw</option>
-                  <option value="edited">edited</option>
-                  <option value="selected">selected</option>
-                  <option value="mobile">mobile</option>
-                </select>
+                <label for="filter-set">Set (coma para múltiples)</label>
+                <input id="filter-set" name="set" placeholder="portfolio, raw, selected" autocomplete="off" class="filter-input" list="set-list">
+                <datalist id="set-list">
+                  <option value="portfolio">
+                  <option value="raw">
+                  <option value="edited">
+                  <option value="selected">
+                  <option value="default">
+                  <option value="mobile">
+                  <option value="instagram">
+                  <option value="instagram-square">
+                </datalist>
               </div>
               <div class="filter-group">
                 <label for="filter-color">Color</label>

@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>photor — Proyectos</title>
+<link rel="stylesheet" href="/static/style.css">
+<style>
+  body { padding: 24px; max-width: 900px; margin: 0 auto; height: auto; overflow: auto; }
+  .back { margin-bottom: 20px; }
+  .back a { color: var(--accent); text-decoration: none; font-size: 13px; }
+  .back a:hover { text-decoration: underline; }
+  h1 { font-size: 1.3em; font-weight: 500; margin-bottom: 4px; }
+  .subtitle { color: var(--muted); font-size: 0.85em; margin-bottom: 24px; }
+  .project { margin-bottom: 28px; }
+  .project-header {
+    background: var(--surface);
+    padding: 10px 14px;
+    border-radius: var(--radius) var(--radius) 0 0;
+    font-weight: 600;
+    font-size: 1em;
+    display: flex;
+    justify-content: space-between;
+    border: 1px solid var(--border);
+    border-bottom: none;
+    cursor: pointer;
+    user-select: none;
+  }
+  .project-header:hover { background: var(--surface-hover); }
+  .project-header .count { color: var(--muted); font-weight: normal; font-size: 0.85em; }
+  .session {
+    border: 1px solid var(--border);
+    border-top: none;
+    padding: 0;
+    overflow: hidden;
+  }
+  .session:last-child { border-radius: 0 0 var(--radius) var(--radius); }
+  .session-header {
+    padding: 8px 14px 8px 28px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9em;
+    cursor: pointer;
+    user-select: none;
+  }
+  .session-header:hover { background: var(--surface); }
+  .session-header .count { color: var(--muted); font-size: 0.85em; }
+  .sets { padding: 0 14px 8px 40px; display: flex; flex-wrap: wrap; gap: 6px; }
+  .set-badge {
+    background: var(--accent-bg);
+    color: var(--accent);
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 0.78em;
+  }
+  .empty { text-align: center; color: var(--muted); padding: 40px; }
+  .loading { text-align: center; color: var(--muted); padding: 40px; }
+</style>
+</head>
+<body>
+<div class="back"><a href="/">← Volver al mapa</a></div>
+<h1>📁 Proyectos y sesiones</h1>
+<p class="subtitle" id="subtitle">Cargando...</p>
+<div id="tree"></div>
+
+<script>
+async function loadTree() {
+  const treeEl = document.getElementById('tree');
+  const subEl = document.getElementById('subtitle');
+  try {
+    const res = await fetch('/api/tree');
+    const data = await res.json();
+    const projects = data.projects || [];
+    subEl.textContent = `${projects.length} proyectos`;
+
+    if (projects.length === 0) {
+      treeEl.innerHTML = '<div class="empty">No hay proyectos indexados</div>';
+      return;
+    }
+
+    let totalSessions = 0;
+    let totalPhotos = 0;
+
+    projects.forEach((p) => {
+      p.sessions.forEach((s) => {
+        totalSessions++;
+        totalPhotos += s.total;
+      });
+    });
+
+    subEl.textContent = `${projects.length} proyectos · ${totalSessions} sesiones · ${totalPhotos} fotos`;
+
+    projects.forEach((p) => {
+      const projDiv = document.createElement('div');
+      projDiv.className = 'project';
+
+      const projTotal = p.sessions.reduce((sum, s) => sum + s.total, 0);
+      projDiv.innerHTML = `
+        <div class="project-header" onclick="toggleProject(this)">
+          <span>📁 ${escapeHtml(p.name)}</span>
+          <span class="count">${p.sessions.length} sesiones · ${projTotal} fotos</span>
+        </div>
+      `;
+
+      p.sessions.forEach((s) => {
+        const sessionDiv = document.createElement('div');
+        sessionDiv.className = 'session';
+        sessionDiv.style.display = 'none'; // collapsed by default
+
+        let setsHtml = '';
+        s.sets.forEach((t) => {
+          setsHtml += `<span class="set-badge">${escapeHtml(t.name)}: ${t.count}</span>`;
+        });
+        if (!setsHtml) setsHtml = '<span class="set-badge" style="background:var(--surface);color:var(--muted);">default</span>';
+
+        sessionDiv.innerHTML = `
+          <div class="session-header" onclick="toggleSession(this)">
+            <span>📷 ${escapeHtml(s.name)}</span>
+            <span class="count">${s.total} fotos</span>
+          </div>
+          <div class="sets">${setsHtml}</div>
+        `;
+        projDiv.appendChild(sessionDiv);
+      });
+
+      treeEl.appendChild(projDiv);
+    });
+  } catch (e) {
+    treeEl.innerHTML = '<div class="empty">Error cargando datos</div>';
+  }
+}
+
+function toggleProject(el) {
+  const container = el.parentElement;
+  const sessions = container.querySelectorAll('.session');
+  const isHidden = sessions[0]?.style.display === 'none';
+  sessions.forEach((s) => { s.style.display = isHidden ? '' : 'none'; });
+}
+
+function toggleSession(el) {
+  // nothing to toggle inside for now
+}
+
+function escapeHtml(s) {
+  if (!s) return '';
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+loadTree();
+</script>
+</body>
+</html>

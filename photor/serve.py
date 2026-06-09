@@ -114,6 +114,8 @@ def route(handler):
     if path == "/api/map-file" and method == "GET":
         return api_map_file(handler)
 
+    if path.startswith("/maps/") and method == "GET":
+        return api_serve_map(handler)
     # Static files: serve from STATIC_DIR
     # Map / → index.html, /static/X → X (strip /static/ prefix)
     if path in ("/", ""):
@@ -304,6 +306,21 @@ def api_map_file(handler):
         handler.wfile.write(content.encode("utf-8"))
     else:
         json_response(handler, {"html": content})
+
+
+def api_serve_map(handler):
+    """GET /maps/mapeo_NNN.html — serve map HTML directly in browser."""
+    filename = os.path.basename(handler.path.split("?")[0])
+    filepath = MAPS_DIR / filename
+    if not filepath.exists() or not filepath.is_file():
+        error_response(handler, "Map not found", 404)
+        return
+    handler.send_response(200)
+    handler.send_header("Content-Type", "text/html; charset=utf-8")
+    handler.send_header("Cache-Control", "no-cache")
+    handler.end_headers()
+    with open(filepath, "rb") as f:
+        handler.wfile.write(f.read())
 
 
 def api_map_run(handler):

@@ -216,7 +216,7 @@ function showResults(data) {
     <div class="result-link">
       <div class="result-link-icon">📊</div>
       <div class="result-link-info">
-        <a href="/api/map-file?path=${encodeURIComponent(path)}" target="_blank" class="result-link-file">
+        <a href="file://${path}" target="_blank" class="result-link-file">
           ${escapeHtml(fileName)}
         </a>
         <div class="result-link-path">${escapeHtml(path)}</div>
@@ -274,7 +274,11 @@ function renderHistory() {
     item.dataset.id = q.id;
 
     item.innerHTML = `
-      <div class="h-title">${escapeHtml(q.title)}</div>
+      <div class="h-title">
+        ${q.result_path
+          ? `<a href="file://${q.result_path}" target="_blank" class="h-link" onclick="event.stopPropagation();">${escapeHtml(q.title)}</a>`
+          : escapeHtml(q.title)}
+      </div>
       <div class="h-meta">
         <span>${escapeHtml(q.time_ago)} · <span class="h-badge">${q.stats?.unique_photos || '?'} fotos</span></span>
         <span class="h-delete" title="Eliminar">🗑️</span>
